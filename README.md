@@ -1,2 +1,0 @@
-MobilSignPKCS11Implementacia
-============================
