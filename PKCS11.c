@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#include <unistd.h>
 //#include <stdbool.h>
 
 
@@ -20,7 +21,7 @@ char* pkcs11fifo_read_path = "/tmp/pkcs11fifo1";
 char* pkcs11fifo_write_path = "/tmp/pkcs11fifo2";
 int pkcs11fifo_read_desc;
 int pkcs11fifo_write_desc;
-int MAX_PKSC11FIFO_BUF = 1024;
+int MAX_PKSC11FIFO_BUF = 4096;
 
 //zapamatany template z FindObjectsInit
 CK_ATTRIBUTE_PTR zapamatanyTemplate;
@@ -33,7 +34,8 @@ void dajSpravuZPipe(char sprava[]) {
 }
 
 void napisDoPipe(char * sprava) {
-    pkcs11fifo_write_desc = open(pkcs11fifo_write_path, O_WRONLY);
+    strcat(sprava, "\0");
+    pkcs11fifo_write_desc = open(pkcs11fifo_write_path, O_WRONLY);    
     write(pkcs11fifo_write_desc, sprava, strlen(sprava));
     close(pkcs11fifo_write_desc);
 }
@@ -82,6 +84,7 @@ void ConsoleLogUnsignedLongInt(unsigned long int cislo) {
 CK_RV CK_ENTRY C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList) {            
     ConsoleLog("C_GetFunctionList entered");   
 
+    //ziskame si prvotnu init spravu z javy
     char spravaZJavy[MAX_PKSC11FIFO_BUF];
     dajSpravuZJavy(spravaZJavy);
     printf("SPRAVA Z JAVY: %s", spravaZJavy);  
@@ -599,9 +602,9 @@ CK_RV CK_ENTRY C_FindObjectsInit(CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pT
 CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject, CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount) {
     ConsoleLog("C_FindObjects entered");
 
-    char spravaPreTelefon[1024] = "";                
+    char spravaPreTelefon[4096] = "";                
     
-    strcat(spravaPreTelefon, "FINDOBJECTS:");
+    strcat(spravaPreTelefon, "FNDO:");
     
     //info o tom, ci je filter neplatny
     int jeFilterNeplatny = 0;
@@ -615,14 +618,14 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_CLASS:                
                 
                 strcat(spravaPreTelefon, "CKA_CLASS");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 ConsoleLog("CKA_CLASS");
                 switch (*((CK_ULONG *) zapamatanyTemplate[i].pValue)) {
                     case CKO_CERTIFICATE:                        
                         
                         strcat(spravaPreTelefon, "CKO_CERTIFICATE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         ConsoleLog("CKO_CERTIFICATE");                        
                         break;
@@ -637,21 +640,21 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_TOKEN:
                 
                 strcat(spravaPreTelefon, "CKA_TOKEN");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 ConsoleLog("CKA_TOKEN");
                 switch (*((CK_BBOOL *) zapamatanyTemplate[i].pValue)) {
                     case TRUE: //token object
                         
                         strcat(spravaPreTelefon, "TRUE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         ConsoleLog("TRUE");
                         break;
                     case FALSE: //session object
                         
                         strcat(spravaPreTelefon, "FALSE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         ConsoleLog("FALSE");
                         break;
@@ -666,21 +669,21 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_PRIVATE:
                 
                 strcat(spravaPreTelefon, "CKA_PRIVATE");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 ConsoleLog("CKA_PRIVATE");
                 switch (*((CK_BBOOL *) zapamatanyTemplate[i].pValue)) {
                     case TRUE: //token object
                         
                         strcat(spravaPreTelefon, "TRUE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         ConsoleLog("TRUE");
                         break;
                     case FALSE: //session object
                         
                         strcat(spravaPreTelefon, "FALSE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         ConsoleLog("FALSE");
                         break;
@@ -694,10 +697,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_LABEL:
                 
                 strcat(spravaPreTelefon, "CKA_LABEL");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
-                strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon,  ((char *) zapamatanyTemplate[i].pValue) );
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_LABEL");
                 break;
@@ -705,10 +708,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_ISSUER:
                 
                 strcat(spravaPreTelefon, "CKA_ISSUER");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
-                strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ((char *) zapamatanyTemplate[i].pValue) );
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_ISSUER");
                 break;
@@ -716,10 +719,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_SERIAL_NUMBER:
                 
                 strcat(spravaPreTelefon, "CKA_SERIAL_NUMBER");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
-                strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ((char *) zapamatanyTemplate[i].pValue));
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_SERIAL_NUMBER");
                 break;
@@ -727,7 +730,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_CERTIFICATE_TYPE:
                 
                 strcat(spravaPreTelefon, "CKA_CERTIFICATE_TYPR");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 ConsoleLog("CKA_CERTIFICATE_TYPE");
                 switch (*((CK_ULONG *) zapamatanyTemplate[i].pValue)) {
@@ -735,7 +738,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
                         ConsoleLog("CKC_X_509");
                         
                         strcat(spravaPreTelefon, "CKC_X_509");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         break;
 
@@ -743,7 +746,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
                         ConsoleLog("CKC_X_ATTR_CERT");
                         
                         strcat(spravaPreTelefon, "CKC_X_ATTR_CERT");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         break;
 
@@ -751,7 +754,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
                         ConsoleLog("CKC_VENDOR_DEFINED");
                         
                         strcat(spravaPreTelefon, "CKC_VENDOR_DEFINED");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         break;
 
@@ -765,7 +768,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_TRUSTED:
                 
                 strcat(spravaPreTelefon, "CKA_TRUSTED");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 ConsoleLog("CKA_TRUSTED");
                 switch (*((CK_BBOOL *) zapamatanyTemplate[i].pValue)) {
@@ -773,7 +776,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
                         ConsoleLog("TRUE");
                         
                         strcat(spravaPreTelefon, "TRUE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         break;
                         
@@ -781,7 +784,7 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
                         ConsoleLog("FALSE");
                         
                         strcat(spravaPreTelefon, "FALSE");
-                        strcat(spravaPreTelefon, ";");
+                        strcat(spravaPreTelefon, ";?;!;?");
                         
                         break;
                         
@@ -795,10 +798,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_SUBJECT:
                 
                 strcat(spravaPreTelefon, "CKA_SUBJECT");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
-                strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ((char *) zapamatanyTemplate[i].pValue));
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_SUBJECT");                
                 break;
@@ -806,10 +809,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_ID:
                 
                 strcat(spravaPreTelefon, "CKA_ID");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_ID");
                 break;
@@ -817,10 +820,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_VALUE:
                 
                 strcat(spravaPreTelefon, "CKA_VALUE");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_VALUE");
                 break;
@@ -828,10 +831,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_OWNER:
                 
                 strcat(spravaPreTelefon, "CKA_OWNER");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_OWNER");
                 break;
@@ -839,10 +842,10 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_AC_ISSUER:
                 
                 strcat(spravaPreTelefon, "CKA_AC_ISSUER");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_AC_ISSUER");
                 break;
@@ -851,17 +854,17 @@ CK_RV CK_ENTRY C_FindObjects(CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR ph
             case CKA_ATTR_TYPES:
                 
                 strcat(spravaPreTelefon, "CKA_ATTR_TYPES");
-                strcat(spravaPreTelefon, "|");
+                strcat(spravaPreTelefon, "//**||");
                 
                 strcat(spravaPreTelefon, "TODO");
-                strcat(spravaPreTelefon, ";");
+                strcat(spravaPreTelefon, ";?;!;?");
                 
                 ConsoleLog("CKA_ATTR_TYPES");
                 break;                                
 
             default:
                 jeFilterNeplatny = 1;
-                ConsoleLog("POZOR, CHCE NEPODPOROVANY TYP ATRIBUTU");                
+                ConsoleLog("POZOR, CHCE NEPODPOROVANY TYP ATRIBUTU");
                 break;
         }
     }
